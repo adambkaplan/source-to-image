@@ -252,6 +252,9 @@ type Config struct {
 
 	// AssembleRuntimeUser specifies the user to run the assemble-runtime script in container
 	AssembleRuntimeUser string
+
+	// BuildProvider specifies the image builder that will create the image from s2i's generated Dockerfile
+	BuildProvider string
 }
 
 // EnvironmentSpec specifies a single environment variable.
