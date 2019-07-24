@@ -172,7 +172,7 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				log.V(0).Infof("Build failed")
 				s2ierr.CheckError(err)
 			} else {
-				if len(cfg.AsDockerfile) > 0 {
+				if len(cfg.AsDockerfile) > 0 && len(cfg.BuildProvider) == 0 {
 					log.V(0).Infof("Application dockerfile generated in %s", cfg.AsDockerfile)
 				} else {
 					log.V(0).Infof("Build completed successfully")

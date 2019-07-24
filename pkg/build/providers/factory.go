@@ -1,6 +1,10 @@
 package providers
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/openshift/source-to-image/pkg/build/providers/podman"
+)
 
 // BuildProvider is an interface to a container image building tool.
 type BuildProvider interface {
@@ -9,5 +13,9 @@ type BuildProvider interface {
 
 // GetBuildProvider creates a BuildProvider instance for the given image building tool.
 func GetBuildProvider(provider string) (BuildProvider, error) {
+	switch provider {
+	case "podman":
+		return podman.NewBuildProviderPodman(), nil
+	}
 	return nil, fmt.Errorf("build provider %s is not supported", provider)
 }
