@@ -222,6 +222,6 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 	buildCmd.Flags().StringVarP(&(cfg.AsDockerfile), "as-dockerfile", "", "", "EXPERIMENTAL: Output a Dockerfile to this path instead of building a new image")
 	buildCmd.Flags().BoolVarP(&(cfg.KeepSymlinks), "keep-symlinks", "", false, "When using '--copy', copy symlinks as symlinks. Default behavior is to follow symlinks and copy files by content")
 	buildCmd.Flags().StringArrayVar(&cfg.AddHost, "add-host", []string{}, "Specify additional entries to add to the /etc/hosts in the assemble container, multiple --add-host can be used to add multiple entries")
-	buildCmd.Flags().StringVar(&cfg.BuildProvider, "with", "docker", "Build tool (docker, buildah, podman, etc.) used to create the container image. Defaults to podman.")
+	buildCmd.Flags().StringVar(&cfg.BuildProvider, "with", "", "Build tool (docker, buildah, podman, etc.) used to create the container image. Use with --as-dockerfile.")
 	return buildCmd
 }

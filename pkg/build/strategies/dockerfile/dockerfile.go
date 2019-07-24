@@ -12,6 +12,7 @@ import (
 	"github.com/openshift/source-to-image/pkg/api"
 	"github.com/openshift/source-to-image/pkg/api/constants"
 	"github.com/openshift/source-to-image/pkg/build"
+	"github.com/openshift/source-to-image/pkg/build/providers"
 	s2ierr "github.com/openshift/source-to-image/pkg/errors"
 	"github.com/openshift/source-to-image/pkg/ignore"
 	"github.com/openshift/source-to-image/pkg/scm"
@@ -99,9 +100,23 @@ func (builder *Dockerfile) Build(config *api.Config) (*api.Result, error) {
 		return builder.result, err
 	}
 
-	if err := builder.CreateDockerfile(config); err != nil {
+	dockerfile, err := builder.CreateDockerfile(config)
+	if err != nil {
 		builder.setFailureReason(utilstatus.ReasonDockerfileCreateFailed, utilstatus.ReasonMessageDockerfileCreateFailed)
 		return builder.result, err
+	}
+
+	if len(config.BuildProvider) > 0 {
+		provider, err := providers.GetBuildProvider(config.BuildProvider)
+		if err != nil {
+			builder.setFailureReason(utilstatus.ReasonDockerImageBuildFailed, utilstatus.ReasonMessageDockerImageBuildFailed)
+			return builder.result, err
+		}
+		err = provider.BuildImage(config.WorkingDir, dockerfile, config.Tag)
+		if err != nil {
+			builder.setFailureReason(utilstatus.ReasonDockerImageBuildFailed, utilstatus.ReasonMessageDockerImageBuildFailed)
+			return builder.result, err
+		}
 	}
 
 	builder.result.Success = true
@@ -111,7 +126,7 @@ func (builder *Dockerfile) Build(config *api.Config) (*api.Result, error) {
 
 // CreateDockerfile takes the various inputs and creates the Dockerfile used by
 // the docker cmd to create the image produced by s2i.
-func (builder *Dockerfile) CreateDockerfile(config *api.Config) error {
+func (builder *Dockerfile) CreateDockerfile(config *api.Config) (string, error) {
 	log.V(4).Infof("Constructing image build context directory at %s", config.WorkingDir)
 	buffer := bytes.Buffer{}
 
@@ -136,7 +151,7 @@ func (builder *Dockerfile) CreateDockerfile(config *api.Config) error {
 	if config.Incremental {
 		imageTag := util.FirstNonEmpty(config.IncrementalFromTag, config.Tag)
 		if len(imageTag) == 0 {
-			return errors.New("Image tag is missing for incremental build")
+			return "", errors.New("Image tag is missing for incremental build")
 		}
 		// Incremental builds run via a multistage Dockerfile
 		buffer.WriteString(fmt.Sprintf("FROM %s as cached\n", imageTag))
@@ -256,7 +271,7 @@ func (builder *Dockerfile) CreateDockerfile(config *api.Config) error {
 
 	filesToDelete, err := util.ListFilesToTruncate(builder.fs, config.Injections)
 	if err != nil {
-		return err
+		return "", err
 	}
 	if len(filesToDelete) > 0 {
 		wroteRun := false
@@ -281,11 +296,12 @@ func (builder *Dockerfile) CreateDockerfile(config *api.Config) error {
 		buffer.WriteString(fmt.Sprintf("CMD %s\n", sanitize(filepath.ToSlash(filepath.Join(imageScriptsDir, "run")))))
 	}
 
-	if err := builder.fs.WriteFile(filepath.Join(config.AsDockerfile), buffer.Bytes()); err != nil {
-		return err
+	outputFile := filepath.Join(config.AsDockerfile)
+	if err := builder.fs.WriteFile(outputFile, buffer.Bytes()); err != nil {
+		return "", err
 	}
 	log.V(2).Infof("Wrote custom Dockerfile to %s", config.AsDockerfile)
-	return nil
+	return outputFile, nil
 }
 
 // Prepare prepares the source code and tar for build.
