@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"os"
 
-	"k8s.io/klog"
-
 	"github.com/openshift/source-to-image/pkg/util/cmd"
+	"github.com/openshift/source-to-image/pkg/util/log"
 )
+
+var klog = log.StderrLog
 
 // Podman is the s2i build provider for Podman
 type Podman struct {
@@ -32,7 +33,7 @@ func (p *Podman) BuildImage(contextDir string, dockerfile string, tag string) er
 		Dir:    contextDir,
 	}
 	args := []string{"build", "-t", tag, "-f", dockerfile}
-	if !klog.V(1) {
+	if klog.Is(1) {
 		opts.Stdout = &bytes.Buffer{}
 		opts.Stderr = &bytes.Buffer{}
 		// args = append(args, "-q")
