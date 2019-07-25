@@ -231,9 +231,9 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 	buildCmd.Flags().StringVar(&(cfg.RuntimeImage), "runtime-image", "", "Image that will be used as the base for the runtime image")
 	buildCmd.Flags().VarP(&(cfg.RuntimeArtifacts), "runtime-artifact", "a", "Specify a file or directory to be copied from the builder to the runtime image")
 	buildCmd.Flags().StringVar(&(networkMode), "network", "", "Specify the default Docker Network name to be used in build process")
-	buildCmd.Flags().StringVarP(&(cfg.AsDockerfile), "as-dockerfile", "", "", "EXPERIMENTAL: Output a Dockerfile to this path instead of building a new image")
+	buildCmd.Flags().StringVarP(&(cfg.AsDockerfile), "as-dockerfile", "", "", "Output a Dockerfile to this path instead of building a new image")
 	buildCmd.Flags().BoolVarP(&(cfg.KeepSymlinks), "keep-symlinks", "", false, "When using '--copy', copy symlinks as symlinks. Default behavior is to follow symlinks and copy files by content")
 	buildCmd.Flags().StringArrayVar(&cfg.AddHost, "add-host", []string{}, "Specify additional entries to add to the /etc/hosts in the assemble container, multiple --add-host can be used to add multiple entries")
-	buildCmd.Flags().StringVar(&cfg.BuildProvider, "with", "", "Build tool (docker, buildah, podman, etc.) used to create the container image. Use with --as-dockerfile.")
+	buildCmd.Flags().StringVar(&cfg.BuildProvider, "with", "", "Build tool (docker, buildah, podman, etc.) used to create the container image.")
 	return buildCmd
 }
