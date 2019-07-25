@@ -172,6 +172,9 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				if len(cfg.BuildProvider) == 0 {
 					cfg.BuildProvider = "podman"
 				}
+			} else {
+				// if AsDockerfile was specified, preserve the working dir
+				cfg.PreserveWorkingDir = true
 			}
 
 			builder, _, err := strategies.GetStrategy(nil, cfg)
@@ -182,7 +185,7 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				s2ierr.CheckError(err)
 			} else {
 				if len(cfg.AsDockerfile) > 0 && len(cfg.BuildProvider) == 0 {
-					log.V(0).Infof("Application dockerfile generated in %s", cfg.AsDockerfile)
+					log.V(0).Infof("Application dockerfile generated in %s", result.Dockerfile)
 				} else {
 					log.V(0).Infof("Build completed successfully")
 

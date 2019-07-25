@@ -85,7 +85,6 @@ func (builder *Dockerfile) Build(config *api.Config) (*api.Result, error) {
 	}
 
 	dir, _ := filepath.Split(config.AsDockerfile)
-	config.PreserveWorkingDir = true
 	config.WorkingDir = dir
 
 	if config.BuilderImage == "" {
@@ -102,6 +101,7 @@ func (builder *Dockerfile) Build(config *api.Config) (*api.Result, error) {
 		builder.setFailureReason(utilstatus.ReasonDockerfileCreateFailed, utilstatus.ReasonMessageDockerfileCreateFailed)
 		return builder.result, err
 	}
+	builder.result.Dockerfile = dockerfile
 
 	if len(config.BuildProvider) > 0 {
 		provider, err := providers.GetBuildProvider(config.BuildProvider)
