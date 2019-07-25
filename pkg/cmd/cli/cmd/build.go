@@ -9,14 +9,11 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/openshift/source-to-image/pkg/api"
-	"github.com/openshift/source-to-image/pkg/api/describe"
 	"github.com/openshift/source-to-image/pkg/api/validation"
 	"github.com/openshift/source-to-image/pkg/build/strategies"
 	cmdutil "github.com/openshift/source-to-image/pkg/cmd/cli/util"
 	"github.com/openshift/source-to-image/pkg/config"
-	"github.com/openshift/source-to-image/pkg/docker"
 	s2ierr "github.com/openshift/source-to-image/pkg/errors"
-	"github.com/openshift/source-to-image/pkg/run"
 	"github.com/openshift/source-to-image/pkg/tar"
 	"github.com/openshift/source-to-image/pkg/util"
 	"github.com/openshift/source-to-image/pkg/version"
@@ -87,7 +84,9 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				fmt.Fprintln(os.Stderr, "ERROR: Incremental build with runtime image isn't supported")
 				return
 			}
+
 			//set default image pull policy
+			// TODO: pass these pull policies to image building tool?
 			if len(cfg.BuilderPullPolicy) == 0 {
 				cfg.BuilderPullPolicy = api.DefaultBuilderPullPolicy
 			}
@@ -114,17 +113,17 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 
 			// Attempt to read the .dockercfg and extract the authentication for
 			// docker pull
-			if r, err := os.Open(cfg.DockerCfgPath); err == nil {
-				defer r.Close()
-				auths := docker.LoadImageRegistryAuth(r)
-				cfg.PullAuthentication = docker.GetImageRegistryAuth(auths, cfg.BuilderImage)
-				if cfg.Incremental {
-					cfg.IncrementalAuthentication = docker.GetImageRegistryAuth(auths, cfg.Tag)
-				}
-				if len(cfg.RuntimeImage) > 0 {
-					cfg.RuntimeAuthentication = docker.GetImageRegistryAuth(auths, cfg.RuntimeImage)
-				}
-			}
+			// if r, err := os.Open(cfg.DockerCfgPath); err == nil {
+			// 	defer r.Close()
+			// 	auths := docker.LoadImageRegistryAuth(r)
+			// 	cfg.PullAuthentication = docker.GetImageRegistryAuth(auths, cfg.BuilderImage)
+			// 	if cfg.Incremental {
+			// 		cfg.IncrementalAuthentication = docker.GetImageRegistryAuth(auths, cfg.Tag)
+			// 	}
+			// 	if len(cfg.RuntimeImage) > 0 {
+			// 		cfg.RuntimeAuthentication = docker.GetImageRegistryAuth(auths, cfg.RuntimeImage)
+			// 	}
+			// }
 
 			if len(cfg.EnvironmentFile) > 0 {
 				result, err := util.ReadEnvironmentFile(cfg.EnvironmentFile)
@@ -150,22 +149,32 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				cfg.DockerNetworkMode = api.DockerNetworkMode(networkMode)
 			}
 
-			client, err := docker.NewEngineAPIClient(cfg.DockerConfig)
-			if err != nil {
-				log.Fatal(err)
-			}
+			// client, err := docker.NewEngineAPIClient(cfg.DockerConfig)
+			// if err != nil {
+			// 	log.Fatal(err)
+			// }
 
+			// if len(cfg.AsDockerfile) == 0 {
+			// 	d := docker.New(client, cfg.PullAuthentication)
+			// 	err := d.CheckReachable()
+			// 	if err != nil {
+			// 		log.Fatal(err)
+			// 	}
+			// }
+
+			// log.V(2).Infof("\n%s\n", describe.Config(client, cfg))
+
+			// Hack: defaulting AsDockerfile forces us to use the Dockerfile s2i strategy
+			// Without --as-dockerfile, assume that user wants to have the image built
 			if len(cfg.AsDockerfile) == 0 {
-				d := docker.New(client, cfg.PullAuthentication)
-				err := d.CheckReachable()
-				if err != nil {
-					log.Fatal(err)
+				cfg.AsDockerfile = "Dockerfile"
+				// Defaulting BuildProvider forces us to execute a container build
+				if len(cfg.BuildProvider) == 0 {
+					cfg.BuildProvider = "podman"
 				}
 			}
 
-			log.V(2).Infof("\n%s\n", describe.Config(client, cfg))
-
-			builder, _, err := strategies.GetStrategy(client, cfg)
+			builder, _, err := strategies.GetStrategy(nil, cfg)
 			s2ierr.CheckError(err)
 			result, err := builder.Build(cfg)
 			if err != nil {
@@ -184,11 +193,11 @@ $ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/r
 				log.V(1).Infof(message)
 			}
 
-			if cfg.RunImage {
-				runner := run.New(client, cfg)
-				err = runner.Run(cfg)
-				s2ierr.CheckError(err)
-			}
+			// if cfg.RunImage {
+			// 	runner := run.New(client, cfg)
+			// 	err = runner.Run(cfg)
+			// 	s2ierr.CheckError(err)
+			// }
 		},
 	}
 

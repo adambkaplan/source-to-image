@@ -85,9 +85,6 @@ func (builder *Dockerfile) Build(config *api.Config) (*api.Result, error) {
 	}
 
 	dir, _ := filepath.Split(config.AsDockerfile)
-	if len(dir) == 0 {
-		dir = "."
-	}
 	config.PreserveWorkingDir = true
 	config.WorkingDir = dir
 
@@ -311,12 +308,17 @@ func (builder *Dockerfile) Prepare(config *api.Config) error {
 	var err error
 
 	if len(config.WorkingDir) == 0 {
-		if config.WorkingDir, err = builder.fs.CreateWorkingDirectory(); err != nil {
+		// hack - if no working dir was specified, set up a temp dir, then update AsDockerfile
+		// This means the `AsDockerfile` parameter was just a file name (and not a directory)
+		config.WorkingDir, err = builder.fs.CreateWorkingDirectory()
+		if err != nil {
 			builder.setFailureReason(utilstatus.ReasonFSOperationFailed, utilstatus.ReasonMessageFSOperationFailed)
 			return err
 		}
+		config.AsDockerfile = filepath.Join(config.WorkingDir, config.AsDockerfile)
 	}
 
+	log.V(2).Infof("Using working directory %s", config.WorkingDir)
 	builder.result.WorkingDir = config.WorkingDir
 
 	// Setup working directories
