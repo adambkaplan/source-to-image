@@ -254,7 +254,7 @@ type Config struct {
 	AssembleRuntimeUser string
 
 	// BuildProvider specifies the image builder that will create the image from s2i's generated Dockerfile
-	BuildProvider string
+	BuildProvider ProviderRuntime
 }
 
 // EnvironmentSpec specifies a single environment variable.
@@ -638,3 +638,42 @@ func (l *VolumeList) AsBinds() []string {
 	}
 	return result
 }
+
+// ProviderRuntime identifies a supported Build provider runtime
+type ProviderRuntime string
+
+// String implements the String() function of pflags.Value so this can be used as
+// command line parameter.
+func (p *ProviderRuntime) String() string {
+	return string(*p)
+}
+
+// Type implements the Type() function of pflags.Value interface
+func (p *ProviderRuntime) Type() string {
+	return "string"
+}
+
+// Set implements the Set() function of pflags.Value interface
+// The valid options are "buildah", "docker" or "podman"
+func (p *ProviderRuntime) Set(v string) error {
+	switch v {
+	case "buildah":
+		*p = BuildahRuntime
+	case "docker":
+		*p = DockerRuntime
+	case "podman":
+		*p = PodmanRuntime
+	default:
+		return fmt.Errorf("unsupported build provider %q, valid providers are: buildah, docker, or podman", v)
+	}
+	return nil
+}
+
+const (
+	// BuildahRuntime is the provider runtime for buildah
+	BuildahRuntime ProviderRuntime = "buildah"
+	// DockerRuntime is the provider runtime for docker
+	DockerRuntime ProviderRuntime = "docker"
+	// PodmanRuntime is the provider runtime for podman
+	PodmanRuntime ProviderRuntime = "podman"
+)
