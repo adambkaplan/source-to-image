@@ -35,7 +35,7 @@ func NewCmdBuild(cfg *api.Config) *cobra.Command {
 	buildCmd := &cobra.Command{
 		Use:   "build <source> <image> [<tag>]",
 		Short: "Build a new image",
-		Long:  "Build a new Docker image named <tag> (if provided) from a source repository and base image.",
+		Long:  "Build a new container image named <tag> (if provided) from a source repository and base image.",
 		Example: `
 # Build a container image from a remote Git repository
 $ s2i build https://github.com/openshift/ruby-hello-world centos/ruby-22-centos7 hello-world-app
@@ -43,8 +43,8 @@ $ s2i build https://github.com/openshift/ruby-hello-world centos/ruby-22-centos7
 # Build from a local directory.  If this directory is a git repo then the current commit will be built.
 $ s2i build . centos/ruby-22-centos7 hello-world-app
 
-# Build using podman instead of docker
-$ s2i build --with podman https://github.com/openshift/ruby-hello-world centos/ruby-22-centos7 hello-world-app
+# Build using podman instead of system default runtime
+$ s2i build https://github.com/openshift/ruby-hello-world centos/ruby-22-centos7 hello-world-app --with podman
 `,
 		Run: func(cmd *cobra.Command, args []string) {
 			log.V(1).Infof("Running S2I version %q\n", version.Get())
