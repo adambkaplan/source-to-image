@@ -16,9 +16,11 @@ s2i::log::install_errexit
 # Go to the top of the tree.
 cd "${S2I_ROOT}"
 
+builder=${S2I_RELEASE_BUILDER:-podman}
+
 # Build the images
 echo "++ Building openshift/sti-release"
-podman build -q --tag openshift/sti-release "${S2I_ROOT}/images/release"
+"${builder}" build -q --tag openshift/sti-release "${S2I_ROOT}/images/release"
 
 context="${S2I_ROOT}/_output/buildenv-context"
 
@@ -40,9 +42,9 @@ git archive --format=tar -o "${context}/archive.tar" "${S2I_GIT_COMMIT}"
 tar -rf "${context}/archive.tar" -C "${context}" sti-version-defs
 gzip -f "${context}/archive.tar"
 
-# Perform the build and release in podman.
-cat "${context}/archive.tar.gz" | podman run -i --cidfile="${context}/cid" -e RELEASE_LDFLAGS="-w -s" openshift/sti-release
-podman cp $(cat ${context}/cid):/go/src/github.com/openshift/source-to-image/_output/local/releases "${S2I_OUTPUT}"
+# Perform the build and release in the container runtime (podman, docker, etc.).
+cat "${context}/archive.tar.gz" | "${builder}" run -i --cidfile="${context}/cid" -e RELEASE_LDFLAGS="-w -s" openshift/sti-release
+"${builder}" cp $(cat ${context}/cid):/go/src/github.com/openshift/source-to-image/_output/local/releases "${S2I_OUTPUT}"
 echo "${S2I_GIT_COMMIT}" > "${S2I_LOCAL_RELEASEPATH}/.commit"
 
 ret=$?; ENDTIME=$(date +%s); echo "$0 took $(($ENDTIME - $STARTTIME)) seconds"; exit "$ret"
